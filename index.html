@@ -58,13 +58,15 @@
             <div class="window-frame-illust"></div>
         </div>
 
-        <img id="beforePhotoOverlay" class="overlay-before-photo" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500" alt="Before">
+        <img id="beforePhotoOverlay" class="overlay-before-photo" src="" alt="Before">
 
         <div class="control-panel">
             <div class="shutter-btn" onclick="openChecklist()"></div>
             <div class="mode-switch" id="modeBtn" onclick="switchMode()">強制切替: 施工後モードへ</div>
         </div>
     </div>
+
+    <canvas id="captureCanvas" style="display:none;"></canvas>
 
     <div class="alert-modal" id="alertModal">
         <div class="modal-content">
@@ -98,24 +100,19 @@
         const modeBtn = document.getElementById('modeBtn');
         const alertModal = document.getElementById('alertModal');
         const confirmBtn = document.getElementById('confirmBtn');
+        const canvas = document.getElementById('captureCanvas');
         
         let currentMode = 'before';
+        let hasCapturedBefore = false; // 1枚目が撮影されたかどうかのフラグ
 
-        // カメラ起動ロジック：エラー回避のため環境制約をマイルドに修正
+        // カメラ起動ロジック
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
             .then(stream => { 
                 video.srcObject = stream; 
             })
             .catch(err => {
-                console.log("背面カメラ未検出、または許可されていません。フォールバックします:", err);
-                // PCやインカメラのみのデバイス用に、デバイス任せで再トライ
                 navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-                    .then(stream => { 
-                        video.srcObject = stream; 
-                    })
-                    .catch(err2 => {
-                        alert("カメラを起動できませんでした。ブラウザの設定でカメラ権限が許可されているか確認してください。");
-                    });
+                    .then(stream => { video.srcObject = stream; });
             });
 
         // 撮影ボタン：チェックリストを開く
@@ -126,7 +123,6 @@
         // チェックリストを閉じる
         function closeChecklist() {
             alertModal.style.display = 'none';
-            // チェックをリセット
             document.getElementById('check1').checked = false;
             document.getElementById('check2').checked = false;
             document.getElementById('check3').checked = false;
@@ -141,14 +137,29 @@
             confirmBtn.disabled = !(c1 && c2 && c3);
         }
 
-        // 写真の保存（擬似処理）とフェーズ移行
+        // 写真の保存処理
         function savePhoto() {
             alertModal.style.display = 'none';
+            
             if (currentMode === 'before') {
-                alert("施工前写真を保存しました。自動的に【施工後モード】へ切り替えます。");
+                // 【新規追加ロジック】現在のビデオ映像の瞬間をCanvasに切り出す
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // 切り出した画像をBase64形式のURLにして、重ね合わせ用の<img>要素にセット
+                const capturedDataUrl = canvas.toDataURL('image/jpeg');
+                beforePhotoOverlay.src = capturedDataUrl;
+                hasCapturedBefore = true;
+
+                alert("施工前写真をシステムに記憶しました。続いて同じ位置から【施工後】の撮影を行います。");
                 switchMode('after');
             } else {
-                alert("施工後写真を保存しました。同一画角・外気確認ロジックをクリアし、行政書士用ドラフトへ連携します。");
+                alert("施工後写真を保存しました。同一画角のチェックが完了しました！");
+                // 初期状態に戻す
+                beforePhotoOverlay.src = "";
+                hasCapturedBefore = false;
                 switchMode('before');
             }
             closeChecklist();
@@ -163,8 +174,8 @@
             if (targetMode === 'after') {
                 currentMode = 'after';
                 guideOverlay.style.display = 'none';
-                beforePhotoOverlay.style.display = 'block'; // 半透明写真を重ねる
-                navText.innerHTML = "<strong style='color:#ff3366;'>【ステップ2：施工後撮影】</strong><br>背景にうっすら見える「施工前写真」とぴったり重なる位置・角度から撮影してください。";
+                beforePhotoOverlay.style.display = 'block'; // 自分が撮った写真が半透明で表示される
+                navText.innerHTML = "<strong style='color:#ff3366;'>【ステップ2：施工後撮影】</strong><br>背景にうっすら見える「あなたが撮影した施工前写真」とぴったり重なる位置から撮影してください。";
                 modeBtn.innerText = "強制切替: 施工前モードへ";
             } else {
                 currentMode = 'before';

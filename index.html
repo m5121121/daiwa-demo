@@ -5,31 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Daiwa補助金申請プラットフォーム - デモ</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; font-family: sans-serif; color: #fff; overflow: hidden; }
+        body { margin: 0; padding: 0; background: #111; font-family: sans-serif; color: #fff; overflow-x: hidden; }
         
-        /* ヘッダーナビゲーション */
+        /* ==========================================
+           メニュー画面（ポータル）のスタイル
+           ========================================== */
+        .menu-screen { padding: 20px; box-sizing: border-box; max-width: 480px; margin: 0 auto; display: block; }
+        .logo-area { text-align: center; margin: 30px 0 20px 0; }
+        .logo-title { font-size: 20px; font-weight: bold; color: #ff3366; letter-spacing: 1px; }
+        .logo-sub { font-size: 11px; color: #aaa; margin-top: 5px; }
+        
+        .project-card { background: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        .project-card h3 { margin: 0 0 8px 0; font-size: 14px; color: #00ffcc; }
+        .project-card p { margin: 0; font-size: 12px; color: #bbb; line-height: 1.4; }
+
+        .section-title { font-size: 13px; color: #aaa; margin: 20px 0 10px 5px; font-weight: bold; }
+        
+        /* 窓選択リスト（1箇所につき1枚ルールを意識） */
+        .window-list { display: flex; flex-direction: column; gap: 10px; }
+        .window-item { background: #2a2a2a; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; cursor: pointer; transition: background 0.2s; }
+        .window-item:active { background: #3a3a3a; }
+        .window-info h4 { margin: 0; font-size: 14px; color: #fff; }
+        .window-info span { font-size: 11px; color: #999; }
+        .status-badge { font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: bold; }
+        .status-yet { background: #444; color: #ccc; }
+        .status-done { background: rgba(0, 255, 204, 0.2); color: #00ffcc; border: 1px solid #00ffcc; }
+
+        /* ==========================================
+           カメラ画面のスタイル（旧コードを継承＋非表示制御）
+           ========================================== */
+        .camera-screen { display: none; position: relative; width: 100vw; height: 100vh; background: #000; }
         .nav-header { position: absolute; top: 10px; left: 5%; width: 90%; text-align: center; z-index: 10; background: rgba(0, 0, 0, 0.85); padding: 12px 0; font-size: 13px; line-height: 1.5; border-radius: 8px; border: 1px solid #333; }
         
-        /* カメラコンテナ */
         .camera-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
         video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* 【施工前】イラストオーバーレイ */
         .overlay-guide { position: absolute; width: 100%; height: 100%; z-index: 2; pointer-events: none; box-sizing: border-box; display: block; }
         .window-frame-illust { position: absolute; top: 25%; left: 15%; width: 70%; height: 40%; border: 3px dashed #00ffcc; border-radius: 4px; box-sizing: border-box; }
         .corner-line-tl { position: absolute; top: 12%; left: 8%; width: 30px; height: 30px; border-top: 4px solid rgba(255,255,255,0.6); border-left: 4px solid rgba(255,255,255,0.6); }
         .corner-line-tr { position: absolute; top: 12%; right: 8%; width: 30px; height: 30px; border-top: 4px solid rgba(255,255,255,0.6); border-right: 4px solid rgba(255,255,255,0.6); }
 
-        /* 【施工後】半透明ビフォー写真重ね合わせ */
         .overlay-before-photo { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 3; opacity: 0.45; display: none; pointer-events: none; filter: brightness(1.2); }
         
-        /* 画面下部コントロール */
         .control-panel { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .shutter-btn { width: 72px; height: 72px; background: #fff; border-radius: 50%; border: 5px solid rgba(255,255,255,0.3); cursor: pointer; transition: transform 0.1s; }
         .shutter-btn:active { transform: scale(0.9); }
         .mode-switch { margin-top: 15px; background: #111; border: 1px solid #555; color: #aaa; padding: 6px 14px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+        .back-to-menu-btn { position: absolute; top: 20px; left: 15px; z-index: 12; background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
 
-        /* 不備防止チェックリスト（モーダルダイアログ） */
+        /* 不備モーダル */
         .alert-modal { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 20; justify-content: center; align-items: center; box-sizing: border-box; padding: 20px; }
         .modal-content { background: #222; border-radius: 12px; width: 100%; max-width: 340px; padding: 20px; border: 1px solid #ff3366; box-sizing: border-box; }
         .modal-title { color: #ff3366; font-size: 16px; font-weight: bold; margin-bottom: 15px; text-align: center; }
@@ -44,25 +68,62 @@
 </head>
 <body>
 
-    <div class="nav-header" id="navText">
-        <strong>【ステップ1：施工前撮影】</strong><br>
-        緑の点線枠に申請窓を合わせ、同じ画角で撮影してください。
-    </div>
-
-    <div class="camera-container">
-        <video id="video" autoplay playsinline></video>
-
-        <div class="overlay-guide" id="guideOverlay">
-            <div class="corner-line-tl"></div>
-            <div class="corner-line-tr"></div>
-            <div class="window-frame-illust"></div>
+    <div class="menu-screen" id="menuScreen">
+        <div class="logo-area">
+            <div class="logo-title">Daiwa 補助金申請ポータル</div>
+            <div class="logo-sub">現場向け不備防止撮影ナビゲーションシステム</div>
         </div>
 
-        <img id="beforePhotoOverlay" class="overlay-before-photo" src="" alt="Before">
+        <div class="project-card">
+            <h3>案件：品川区北品川 T様邸リフォーム</h3>
+            <p>対象事業：既存住宅における省エネ改修促進事業</p>
+            <p style="margin-top: 5px; color: #888;">※行政書士へ共有する申請前ドラフトの作成工程です。</p>
+        </div>
 
-        <div class="control-panel">
-            <div class="shutter-btn" onclick="openChecklist()"></div>
-            <div class="mode-switch" id="modeBtn" onclick="switchMode()">強制切替: 施工後モードへ</div>
+        <div class="section-title">申請対象の窓を選択（1箇所につき1枚撮影）</div>
+        
+        <div class="window-list">
+            <div class="window-item" onclick="startCamera('窓①：リビング南側大窓')">
+                <div class="window-info">
+                    <h4 id="window1-title">窓①：リビング南側大窓</h4>
+                    <span>内窓設置 / 高断熱ガラス交換</span>
+                </div>
+                <div class="status-badge status-yet" id="window1-status">未撮影</div>
+            </div>
+            
+            <div class="window-item" onclick="startCamera('窓②：キッチン西側小窓')">
+                <div class="window-info">
+                    <h4 id="window2-title">窓②：キッチン西側小窓</h4>
+                    <span>外窓交換（断熱ドア含む）</span>
+                </div>
+                <div class="status-badge status-yet" id="window2-status">未撮影</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="camera-screen" id="cameraScreen">
+        <div class="back-to-menu-btn" onclick="stopCamera()">◀ 戻る</div>
+        
+        <div class="nav-header" id="navText">
+            <strong id="activeWindowLabel">窓①</strong><br>
+            【ステップ1：施工前撮影】緑の枠に窓を合わせて撮影してください。
+        </div>
+
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+
+            <div class="overlay-guide" id="guideOverlay">
+                <div class="corner-line-tl"></div>
+                <div class="corner-line-tr"></div>
+                <div class="window-frame-illust"></div>
+            </div>
+
+            <img id="beforePhotoOverlay" class="overlay-before-photo" src="" alt="Before">
+
+            <div class="control-panel">
+                <div class="shutter-btn" onclick="openChecklist()"></div>
+                <div class="mode-switch" id="modeBtn" onclick="switchMode()">強制切替: 施工後へ</div>
+            </div>
         </div>
     </div>
 
@@ -74,15 +135,15 @@
             
             <div class="checklist-item">
                 <input type="checkbox" id="check1" onchange="validateChecklist()">
-                <label for="check1"><strong>窓の全体</strong>がしっかり画角に収まっていますか？（1箇所につき1枚）</label>
+                <label for="check1"><strong>窓の全体</strong>がしっかり画角に収まっていますか？</label>
             </div>
             <div class="checklist-item">
                 <input type="checkbox" id="check2" onchange="validateChecklist()">
-                <label for="check2"><strong>シャッターやカーテン</strong>を開け、外の風景（外気に面していること）が見えていますか？</label>
+                <label for="check2"><strong>シャッターやカーテン</strong>を開け、外気に面していることが確認できますか？</label>
             </div>
             <div class="checklist-item">
                 <input type="checkbox" id="check3" onchange="validateChecklist()">
-                <label for="check3">すりガラスや夜間撮影の場合、窓を一部開けて<strong>外が見える状態</strong>にしましたか？</label>
+                <label for="check3">すりガラス・夜間の場合、窓を少し開けて<strong>外が見える状態</strong>ですか？</label>
             </div>
 
             <div class="modal-btns">
@@ -93,6 +154,8 @@
     </div>
 
     <script>
+        const menuScreen = document.getElementById('menuScreen');
+        const cameraScreen = document.getElementById('cameraScreen');
         const video = document.getElementById('video');
         const guideOverlay = document.getElementById('guideOverlay');
         const beforePhotoOverlay = document.getElementById('beforePhotoOverlay');
@@ -101,26 +164,52 @@
         const alertModal = document.getElementById('alertModal');
         const confirmBtn = document.getElementById('confirmBtn');
         const canvas = document.getElementById('captureCanvas');
+        const activeWindowLabel = document.getElementById('activeWindowLabel');
         
         let currentMode = 'before';
-        let hasCapturedBefore = false; // 1枚目が撮影されたかどうかのフラグ
+        let selectedWindowName = '';
+        let localStream = null;
 
-        // カメラ起動ロジック
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-            .then(stream => { 
-                video.srcObject = stream; 
-            })
-            .catch(err => {
-                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-                    .then(stream => { video.srcObject = stream; });
-            });
+        // カメラ画面へ切り替え
+        function startCamera(windowName) {
+            selectedWindowName = windowName;
+            activeWindowLabel.innerText = selectedWindowName;
+            
+            menuScreen.style.display = 'none';
+            cameraScreen.style.display = 'block';
+            
+            // モードを初期化
+            currentMode = 'before';
+            guideOverlay.style.display = 'block';
+            beforePhotoOverlay.style.display = 'none';
+            beforePhotoOverlay.src = "";
+            updateNavText();
 
-        // 撮影ボタン：チェックリストを開く
-        function openChecklist() {
-            alertModal.style.display = 'flex';
+            // カメラを起動
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+                .then(stream => { 
+                    localStream = stream;
+                    video.srcObject = stream; 
+                })
+                .catch(err => {
+                    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                        .then(stream => { 
+                            localStream = stream;
+                            video.srcObject = stream; 
+                        });
+                });
         }
 
-        // チェックリストを閉じる
+        // メニュー画面へ戻る（カメラ停止）
+        function stopCamera() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            cameraScreen.style.display = 'none';
+            menuScreen.style.display = 'block';
+        }
+
+        function openChecklist() { alertModal.style.display = 'flex'; }
         function closeChecklist() {
             alertModal.style.display = 'none';
             document.getElementById('check1').checked = false;
@@ -128,8 +217,6 @@
             document.getElementById('check3').checked = false;
             confirmBtn.disabled = true;
         }
-
-        // 全てチェックされたか検証
         function validateChecklist() {
             const c1 = document.getElementById('check1').checked;
             const c2 = document.getElementById('check2').checked;
@@ -137,52 +224,56 @@
             confirmBtn.disabled = !(c1 && c2 && c3);
         }
 
-        // 写真の保存処理
         function savePhoto() {
             alertModal.style.display = 'none';
-            
             if (currentMode === 'before') {
-                // 【新規追加ロジック】現在のビデオ映像の瞬間をCanvasに切り出す
+                // 1枚目（ビフォー）をキャプチャして透過背景にする
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // 切り出した画像をBase64形式のURLにして、重ね合わせ用の<img>要素にセット
-                const capturedDataUrl = canvas.toDataURL('image/jpeg');
-                beforePhotoOverlay.src = capturedDataUrl;
-                hasCapturedBefore = true;
+                beforePhotoOverlay.src = canvas.toDataURL('image/jpeg');
 
-                alert("施工前写真をシステムに記憶しました。続いて同じ位置から【施工後】の撮影を行います。");
+                alert("施工前写真をシステムに記憶しました。続いて【施工後】の撮影を行います。");
                 switchMode('after');
             } else {
-                alert("施工後写真を保存しました。同一画角のチェックが完了しました！");
-                // 初期状態に戻す
-                beforePhotoOverlay.src = "";
-                hasCapturedBefore = false;
-                switchMode('before');
+                alert("施工後写真を保存しました！メニューのステータスを更新します。");
+                
+                // メニュー画面のステータスを「撮影完了」にする
+                if (selectedWindowName.includes('窓①')) {
+                    document.getElementById('window1-status').innerText = '撮影完了';
+                    document.getElementById('window1-status').className = 'status-badge status-done';
+                } else if (selectedWindowName.includes('窓②')) {
+                    document.getElementById('window2-status').innerText = '撮影完了';
+                    document.getElementById('window2-status').className = 'status-badge status-done';
+                }
+                
+                stopCamera();
             }
             closeChecklist();
         }
 
-        // モード切り替えロジック
         function switchMode(targetMode) {
-            if (!targetMode) {
-                targetMode = (currentMode === 'before') ? 'after' : 'before';
-            }
-
-            if (targetMode === 'after') {
-                currentMode = 'after';
+            if (!targetMode) targetMode = (currentMode === 'before') ? 'after' : 'before';
+            currentMode = targetMode;
+            
+            if (currentMode === 'after') {
                 guideOverlay.style.display = 'none';
-                beforePhotoOverlay.style.display = 'block'; // 自分が撮った写真が半透明で表示される
-                navText.innerHTML = "<strong style='color:#ff3366;'>【ステップ2：施工後撮影】</strong><br>背景にうっすら見える「あなたが撮影した施工前写真」とぴったり重なる位置から撮影してください。";
-                modeBtn.innerText = "強制切替: 施工前モードへ";
+                beforePhotoOverlay.style.display = 'block';
+                modeBtn.innerText = "強制切替: 施工前へ";
             } else {
-                currentMode = 'before';
                 guideOverlay.style.display = 'block';
                 beforePhotoOverlay.style.display = 'none';
-                navText.innerHTML = "<strong>【ステップ1：施工前撮影】</strong><br>緑の点線枠に申請窓を合わせ、同じ画角で撮影してください。";
-                modeBtn.innerText = "強制切替: 施工後モードへ";
+                modeBtn.innerText = "強制切替: 施工後へ";
+            }
+            updateNavText();
+        }
+
+        function updateNavText() {
+            if (currentMode === 'before') {
+                navText.innerHTML = `<strong style="color:#00ffcc;">${selectedWindowName}</strong><br>【ステップ1：施工前撮影】緑の枠に窓を合わせて撮影してください。`;
+            } else {
+                navText.innerHTML = `<strong style="color:#ff3366;">${selectedWindowName}</strong><br>【ステップ2：施工後撮影】半透明の施工前写真とぴったり重ねて撮影してください。`;
             }
         }
     </script>
